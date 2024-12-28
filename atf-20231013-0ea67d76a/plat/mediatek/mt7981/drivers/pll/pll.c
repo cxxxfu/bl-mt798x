@@ -70,8 +70,17 @@ unsigned int mtk_get_cpu_freq()
 
 void mtk_pll_init(int skip_dcm_setting)
 {
-
+	uint32_t readreg;
+	mmio_clrbits_32(ARMPLL_CON1, ARMPLL_CON1_ALL0); // clear all armpll_con1
+	readreg = mmio_read_32(ARMPLL_CON1); //read con1
+	NOTICE("CON1 should 0 actual %X",readreg); //print con1
+	NOTICE("THIS IS AN OVERCLOKING BL2!\n");
+	mmio_write_32(ARMPLL_CON1, 0x60000000); /* 0.9G (x2) */
+	//mmio_write_32(ARMPLL_CON1, 0x82000000); /* 2.0G (x1) */
+	 mmio_clrbits_32(ARMPLL_CON0 , DIVIDE_RATIO_BIT4);  //can clear - depand on armpll_con1
 	/* Power on PLL */
+//	 mmio_setbits_32(ARMPLL_CON0, 0x104); /* divider for 2.6G */
+	
 	mmio_setbits_32(ARMPLL_PWR_CON0, CON0_PWR_ON);
 	mmio_setbits_32(NET2PLL_PWR_CON0, CON0_PWR_ON);
 	mmio_setbits_32(MMPLL_PWR_CON0, CON0_PWR_ON);
@@ -80,7 +89,7 @@ void mtk_pll_init(int skip_dcm_setting)
 	mmio_setbits_32(NET1PLL1_PWR_CON0, CON0_PWR_ON);
 	mmio_setbits_32(APLL2_PWR_CON0, CON0_PWR_ON);
 	mmio_setbits_32(MPLL_PWR_CON0, CON0_PWR_ON);
-
+	
 	udelay(1);
 
 	/* Disable PLL ISO */
@@ -92,13 +101,23 @@ void mtk_pll_init(int skip_dcm_setting)
 	mmio_clrbits_32(NET1PLL1_PWR_CON0, CON0_ISO_EN);
 	mmio_clrbits_32(APLL2_PWR_CON0, CON0_ISO_EN);
 	mmio_clrbits_32(MPLL_PWR_CON0, CON0_ISO_EN);
+	
+
+    mmio_clrbits_32(ARMPLL_CON0 , DIVIDE_RATIO_BIT4);  //can clear - depand on armpll_con1
 
 	/* Set PLL frequency */
-	mmio_write_32(ARMPLL_CON1, 0x82000000); /* 1.3G */
+	//mmio_clrbits_32(ARMPLL_CON1, ARMPLL_CON1_ALL0); // clear all armpll_con1
+	readreg = mmio_read_32(ARMPLL_CON1); //read con1
+	NOTICE("CON1 should 0 actual %X",readreg); //print con1
+	//mmio_write_32(ARMPLL_CON1, 0x64000000); /* 1.0G (x2) */
+	//mmio_write_32(ARMPLL_CON1, 0x82000000); /* 1.3G */
+	//mmio_write_32(ARMPLL_CON1, 0xFFFFFFFF); /* 2.0GG */
 
 	//mmio_setbits_32(ARMPLL_CON0, 0x124); /* divider for 650M */
+	//mmio_setbits_32(ARMPLL_CON0, 0x114); /* divider for 1.3G */
+	mmio_setbits_32(ARMPLL_CON0, 0x104); /* divider for 2.6G */
 
-	mmio_setbits_32(ARMPLL_CON0, 0x114); /* divider for 1.3G */
+		
 
 	mmio_setbits_32(NET2PLL_CON0, 0x114);
 	mmio_setbits_32(MMPLL_CON0, 0x124);
@@ -153,4 +172,11 @@ void mtk_pll_init(int skip_dcm_setting)
 
 	mmio_write_32(0x1001B1C0, 0x7FFEFCE3);
 	mmio_write_32(0x1001B1C4, 0x3);
+}
+
+void mtk_pll_eth_init(void)
+{
+	mmio_clrsetbits_32(CLK_CFG_4, 0xffffff00, 0x01010100);
+	mmio_clrsetbits_32(CLK_CFG_5, 0x00ffffff, 0x00010101);
+	mmio_write_32(0x1001B1C0, 0x7e0000);
 }
